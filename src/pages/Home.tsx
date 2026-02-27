@@ -56,7 +56,7 @@ const Home = () => {
 
             <div className="event-grid">
                 {MOCK_EVENTS.map(ev => (
-                    <div key={ev.id} className="event-card" onClick={() => navigate(`/checkout/${ev.id}`)}>
+                    <div key={ev.id} className="event-card" onClick={() => navigate(`/event/${ev.id}`)}>
                         <div className="event-card-img" style={{ backgroundImage: `url(${ev.image})` }} />
                         <div className="event-card-content">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
