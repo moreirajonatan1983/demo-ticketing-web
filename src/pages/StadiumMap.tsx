@@ -1,135 +1,108 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Minus } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import EventHeader from '../components/EventHeader';
 
 const MOCK_SECTORS = [
-    { id: 'campo', name: 'Campo sentado', price: 135000, blocks: [{ id: 'A', name: 'A' }, { id: 'B', name: 'B' }, { id: 'C', name: 'C' }, { id: 'D', name: 'D' }] },
-    { id: 'platea-baja', name: 'Platea Baja', price: 115000, blocks: [{ id: '102', name: '102' }, { id: '103', name: '103' }, { id: '104', name: '104' }, { id: '105', name: '105' }] },
-    { id: 'platea-alta', name: 'Platea Alta', price: 70000, blocks: [{ id: '301', name: '301', status: 'available' }, { id: '302', name: '302', status: 'soldout' }, { id: '303', name: '303', status: 'available' }, { id: '304', name: '304', status: 'available' }, { id: '305', name: '305', status: 'available' }] }
+    { id: 'campo', name: 'Campo Sentado', price: 135000, status: 'available', blocks: [{ id: 'A', name: 'Bloque A' }, { id: 'B', name: 'Bloque B' }] },
+    { id: 'platea-baja', name: 'Platea Baja', price: 115000, status: 'few', blocks: [{ id: '102', name: 'Sector 102' }, { id: '103', name: 'Sector 103' }] },
+    { id: 'platea-alta', name: 'Platea Alta', price: 70000, status: 'available', blocks: [{ id: '301', name: 'Sector 301' }, { id: '304', name: 'Sector 304' }] },
+    { id: 'vip', name: 'Premium Lounge', price: 250000, status: 'soldout', blocks: [] }
 ];
 
 const StadiumMap = () => {
     const navigate = useNavigate();
-    const [expandedSector, setExpandedSector] = useState<string | null>('platea-alta');
-    const [selectedBlock, setSelectedBlock] = useState<string>('301');
-    const [qty, setQty] = useState(1);
-
-    const handleContinue = () => {
-        // Here we simulate picking a block, maybe next step is exact seats if numbered
-        navigate(`/event/1/date/1/sector/${expandedSector}/block/${selectedBlock}/seats`);
-    };
+    const [selectedSector, setSelectedSector] = useState<string | null>(null);
 
     return (
-        <div className="animate-fade-in" style={{ backgroundColor: '#ffffff', minHeight: '100vh', color: '#000' }}>
-            <EventHeader title="Ricardo Montaner" date="domingo, 08 marzo 2026 09:00" timeRemaining="09:54" />
+        <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
+            <EventHeader title="Ricardo Montaner" date="Domingo, 08 Marzo 2026 • 21:00 hs" timeRemaining="09:54" />
 
-            <div className="flow-layout">
-                {/* Left - Map Area */}
-                <div className="flow-main-content">
-                    <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '2rem', padding: '12px', background: '#e0e0e0', borderRadius: '8px', maxWidth: '400px' }}>
-                        <span style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--ma-cyan)' }}></div> Seleccionado</span>
-                        <span style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--ma-green)' }}></div> Disponible</span>
-                        <span style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: '#888' }}></div> Agotado</span>
+            <h2 className="section-title title-glow" style={{ fontSize: '2rem', marginBottom: '2rem' }}>Seleccionar Sector</h2>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }}>
+                {/* Left - Visual Map Placeholder */}
+                <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '500px', position: 'relative' }}>
+
+                    <div style={{ position: 'absolute', top: '1rem', left: '1rem', display: 'flex', gap: '1rem', background: 'rgba(0,0,0,0.5)', padding: '10px 15px', borderRadius: 'var(--radius-full)' }}>
+                        <span style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--primary)' }}></div> Disponible</span>
+                        <span style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--warning)' }}></div> Pocos tickets</span>
+                        <span style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--glass-border)' }}></div> Agotado</span>
                     </div>
 
-                    <div style={{ width: '100%', height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {/* Inline simplified map mimicking the shape */}
-                        <svg viewBox="0 0 500 500" width="100%" height="100%">
-                            {/* Escenario */}
-                            <rect x="180" y="400" width="140" height="40" fill="#000" />
-                            <text x="250" y="425" fill="#fff" fontSize="14" fontWeight="bold" textAnchor="middle">ESCENARIO</text>
+                    <div style={{ width: '80%', height: '80%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                        {/* Escenario */}
+                        <div style={{ width: '200px', height: '40px', background: 'linear-gradient(to right, #2a2a35, #3f3f5a)', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.2rem', letterSpacing: '4px', borderTopLeftRadius: '20px', borderTopRightRadius: '20px', boxShadow: '0 -5px 20px rgba(124, 58, 237, 0.3)' }}>ESCENARIO</div>
 
+                        {/* Fake SVG Map styled in dark mode */}
+                        <svg viewBox="0 0 500 400" width="100%" height="100%" style={{ filter: 'drop-shadow(0 0 10px rgba(0,0,0,0.5))' }}>
                             {/* Campo Blocks */}
-                            <path d="M 160 380 L 160 320 L 200 320 L 200 380 Z" className={`map-polygon ${selectedBlock === 'D' ? 'selected' : ''}`} fill="var(--ma-green)" />
-                            <text x="180" y="355" fill="#fff" fontSize="16" fontWeight="bold" textAnchor="middle">D</text>
+                            <path d="M 120 320 L 120 200 L 220 200 L 220 320 Z" className="map-polygon" fill="var(--primary)" opacity={selectedSector === 'campo' ? 1 : 0.6} onClick={() => setSelectedSector('campo')} style={{ cursor: 'pointer', transition: 'var(--transition)' }} />
+                            <text x="170" y="265" fill="#fff" fontSize="20" fontWeight="bold" textAnchor="middle" pointerEvents="none">CAMPO</text>
 
-                            <path d="M 210 380 L 210 320 L 245 320 L 245 380 Z" className={`map-polygon ${selectedBlock === 'C' ? 'selected' : ''}`} fill="#888" />
-                            <text x="227" y="355" fill="#fff" fontSize="16" fontWeight="bold" textAnchor="middle">C</text>
+                            <path d="M 280 320 L 280 200 L 380 200 L 380 320 Z" className="map-polygon" fill="var(--primary)" opacity={selectedSector === 'campo' ? 1 : 0.6} onClick={() => setSelectedSector('campo')} style={{ cursor: 'pointer', transition: 'var(--transition)' }} />
+                            <text x="330" y="265" fill="#fff" fontSize="20" fontWeight="bold" textAnchor="middle" pointerEvents="none">CAMPO</text>
 
-                            <path d="M 255 380 L 255 320 L 290 320 L 290 380 Z" className={`map-polygon ${selectedBlock === 'B' ? 'selected' : ''}`} fill="#888" />
-                            <text x="272" y="355" fill="#fff" fontSize="16" fontWeight="bold" textAnchor="middle">B</text>
-
-                            <path d="M 300 380 L 300 320 L 340 320 L 340 380 Z" className={`map-polygon ${selectedBlock === 'A' ? 'selected' : ''}`} fill="#888" />
-                            <text x="320" y="355" fill="#fff" fontSize="16" fontWeight="bold" textAnchor="middle">A</text>
+                            {/* Platea Baja */}
+                            <path d="M 70 340 L 100 200 L 100 150 L 50 150 L 20 340 Z" fill="var(--warning)" opacity={selectedSector === 'platea-baja' ? 1 : 0.6} onClick={() => setSelectedSector('platea-baja')} style={{ cursor: 'pointer', transition: 'var(--transition)' }} />
+                            <path d="M 430 340 L 400 200 L 400 150 L 450 150 L 480 340 Z" fill="var(--warning)" opacity={selectedSector === 'platea-baja' ? 1 : 0.6} onClick={() => setSelectedSector('platea-baja')} style={{ cursor: 'pointer', transition: 'var(--transition)' }} />
 
                             {/* Platea Alta - specific block 301 */}
-                            <path d="M 350 380 L 350 350 L 390 350 L 380 380 Z" className={`map-polygon ${selectedBlock === '301' ? 'selected' : ''}`} fill={selectedBlock === '301' ? 'var(--ma-cyan)' : 'var(--ma-green)'} onClick={() => setSelectedBlock('301')} />
-                            <text x="365" y="368" fill="#fff" fontSize="10" textAnchor="middle">301</text>
-
-                            <path d="M 355 340 L 355 310 L 390 310 L 395 340 Z" className={`map-polygon ${selectedBlock === '302' ? 'selected' : ''}`} fill="#888" />
-                            <text x="375" y="330" fill="#fff" fontSize="10" textAnchor="middle">302</text>
-
-                            <path d="M 355 300 L 355 260 L 395 260 L 400 300 Z" className={`map-polygon ${selectedBlock === '303' ? 'selected' : ''}`} fill="#888" />
-                            <text x="378" y="285" fill="#fff" fontSize="10" textAnchor="middle">303</text>
-
-                            {/* Placeholder for the rest of the map */}
-                            <path d="M 120 380 L 120 350 L 150 350 L 150 380 Z" fill="var(--ma-green)" />
-                            <path d="M 110 340 L 110 310 L 150 310 L 150 340 Z" fill="var(--ma-green)" />
-
-                            <path d="M 100 300 L 100 260 L 140 260 L 140 300 Z" fill="var(--ma-green)" />
-                            <path d="M 110 250 L 130 200 L 170 200 L 150 250 Z" fill="var(--ma-green)" />
-                            <path d="M 350 250 L 370 200 L 330 200 L 310 250 Z" fill="var(--ma-green)" />
-
-                            <path d="M 180 190 L 220 150 L 280 150 L 320 190 Z" fill="var(--ma-green)" />
+                            <path d="M 150 100 L 350 100 L 400 20 L 100 20 Z" fill="var(--primary)" opacity={selectedSector === 'platea-alta' ? 1 : 0.6} onClick={() => setSelectedSector('platea-alta')} style={{ cursor: 'pointer', transition: 'var(--transition)' }} />
+                            <text x="250" y="65" fill="#fff" fontSize="16" fontWeight="bold" textAnchor="middle" pointerEvents="none">PLATEA ALTA</text>
                         </svg>
                     </div>
                 </div>
 
-                {/* Right - Sidebar Config */}
-                <div className="flow-sidebar">
-                    <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', fontWeight: 'bold' }}>Seleccionar ubicación</h3>
-                    <p style={{ fontSize: '0.9rem', color: '#666', marginBottom: '2rem' }}>Para continuar elegí tu ubicación desde el listado</p>
-
-                    <div>
-                        {MOCK_SECTORS.map(sec => (
-                            <div key={sec.id} className="accordion">
-                                <div className={`accordion-header ${expandedSector === sec.id ? 'active' : ''}`} onClick={() => setExpandedSector(sec.id)}>
-                                    <div>
-                                        <div style={{ fontSize: '1.05rem', fontWeight: 'bold' }}>{sec.name}</div>
-                                        <div style={{ fontSize: '0.8rem', color: '#666', fontWeight: 'normal' }}>Desde $ {sec.price.toLocaleString('es-AR')}</div>
-                                    </div>
-                                    {expandedSector === sec.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                {/* Right - Sector List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {MOCK_SECTORS.map(sec => (
+                        <div
+                            key={sec.id}
+                            className="glass-panel"
+                            style={{
+                                padding: '1.5rem',
+                                cursor: sec.status === 'soldout' ? 'not-allowed' : 'pointer',
+                                border: selectedSector === sec.id ? '1px solid var(--primary)' : '1px solid var(--glass-border)',
+                                opacity: sec.status === 'soldout' ? 0.5 : 1,
+                                transition: 'var(--transition)',
+                                transform: selectedSector === sec.id ? 'translateY(-2px)' : 'none',
+                                boxShadow: selectedSector === sec.id ? 'var(--glow)' : 'none'
+                            }}
+                            onClick={() => {
+                                if (sec.status !== 'soldout') {
+                                    if (selectedSector === sec.id) {
+                                        navigate(`/event/1/date/1/sector/${sec.id}/block/1/seats`);
+                                    } else {
+                                        setSelectedSector(sec.id);
+                                    }
+                                }
+                            }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '4px' }}>{sec.name}</div>
+                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Desde <span style={{ color: 'white', fontWeight: 'bold' }}>$ {sec.price.toLocaleString('es-AR')}</span></div>
                                 </div>
-
-                                {expandedSector === sec.id && (
-                                    <div className="accordion-body">
-                                        {/* Block List */}
-                                        {sec.blocks.map(block => (
-                                            <div key={block.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #eee' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => setSelectedBlock(block.id)}>
-                                                    <div style={{ width: 18, height: 18, borderRadius: '50%', border: selectedBlock === block.id ? '5px solid var(--ma-cyan)' : '2px solid #ccc', background: '#fff' }}></div>
-                                                    <span style={{ fontWeight: selectedBlock === block.id ? 'bold' : 'normal' }}>{block.name}</span>
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                    <span style={{ fontSize: '0.9rem' }}>$ {sec.price.toLocaleString('es-AR')}</span>
-                                                    {selectedBlock === block.id && (
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                            <button style={{ width: 28, height: 28, background: 'var(--ma-cyan)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setQty(Math.max(1, qty - 1))}><Minus size={16} /></button>
-                                                            <span style={{ width: 20, textAlign: 'center', fontWeight: 'bold' }}>{qty}</span>
-                                                            <button style={{ width: 28, height: 28, background: 'var(--ma-cyan)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setQty(qty + 1)}><Plus size={16} /></button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                <div>
+                                    {sec.status === 'soldout' && <span style={{ padding: '4px 8px', background: 'rgba(239, 68, 68, 0.2)', color: 'var(--error)', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>Agotado</span>}
+                                    {sec.status === 'few' && <span style={{ padding: '4px 8px', background: 'rgba(245, 158, 11, 0.2)', color: 'var(--warning)', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>Pocos</span>}
+                                    {sec.status === 'available' && <span style={{ padding: '4px 8px', background: 'rgba(124, 58, 237, 0.2)', color: 'var(--primary)', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>Disponible</span>}
+                                </div>
                             </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
 
-            {/* Bottom Sticky Footer */}
-            <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#e0e4e8', padding: '1.5rem', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #cdd3d8' }}>
-                <button
-                    className="btn btn-primary"
-                    style={{ width: '250px', padding: '14px', fontSize: '1.1rem' }}
-                    onClick={handleContinue}
-                >
-                    Continuar
-                </button>
+                            {/* Expanded State (Preview of continue block) */}
+                            {selectedSector === sec.id && sec.status !== 'soldout' && (
+                                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}><Info size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} /> Toca nuevamente para ver asientos</span>
+                                    <button className="btn btn-primary" onClick={() => navigate(`/event/1/date/1/sector/${sec.id}/block/1/seats`)}>
+                                        Ver Butacas
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
             </div>
 
         </div>
