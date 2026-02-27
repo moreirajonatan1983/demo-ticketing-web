@@ -1,75 +1,103 @@
-
 import { useState } from 'react';
-import { Calendar, MapPin, CreditCard, ShieldCheck } from 'lucide-react';
+import { CreditCard, ShieldCheck, Mail, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Checkout = () => {
     const navigate = useNavigate();
-    const [qtyStall, setQtyStall] = useState(0);
-    const [qtyVip, setQtyVip] = useState(0);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [isConfirmed, setIsConfirmed] = useState(false);
 
-    const total = (qtyStall * 150) + (qtyVip * 350);
-    const totalItems = qtyStall + qtyVip;
+    const total = 700.00; // Mock total from 2 tickets of 350
+    const totalItems = 2; // Mock
 
-    const handlePay = () => {
-        alert("¡Pago simulado procesado exitosamente! Circuit Breaker y SAGA cerrados.");
-        navigate('/mytickets');
+    const handlePay = (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsProcessing(true);
+
+        // Simulating immediate async acknowledgement (Not actual processing)
+        setTimeout(() => {
+            setIsProcessing(false);
+            setIsConfirmed(true);
+        }, 1500);
     };
+
+    if (isConfirmed) {
+        return (
+            <div className="animate-fade-in glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center', maxWidth: '600px', margin: '4rem auto' }}>
+                <div style={{ width: '80px', height: '80px', background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+                    <Mail size={40} />
+                </div>
+                <h2 className="section-title title-glow" style={{ fontSize: '2rem', marginBottom: '1rem' }}>Solicitud Recibida</h2>
+                <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '2.5rem', lineHeight: '1.6' }}>
+                    Tu solicitud de compra por <strong>{totalItems} entradas</strong> está siendo procesada de forma segura por nuestros servidores.
+                </p>
+                <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', marginBottom: '3rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    Recibirás un correo electrónico de confirmación con tus entradas en formato digital cuando el pago y la reserva se completen exitosamente.
+                </div>
+                <button className="btn btn-primary" onClick={() => navigate('/mytickets')}>
+                    Ir a Mis Entradas
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
+            <h2 className="section-title title-glow" style={{ textAlign: 'left', fontSize: '2rem', marginBottom: '2rem' }}>Pago Seguro</h2>
+
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '3rem' }}>
 
-                {/* Left Col - Select Tickets */}
-                <div>
-                    <h2 className="section-title title-glow" style={{ textAlign: 'left', fontSize: '2rem' }}>COLDPLAY - Music of the Spheres</h2>
+                {/* Left Col - Payment Form */}
+                <div className="glass-panel" style={{ padding: '2.5rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: '700' }}>Información de Pago</h3>
 
-                    <div style={{ display: 'flex', gap: '2rem', marginBottom: '2rem', color: 'var(--text-secondary)' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Calendar size={18} /> 15 OCT 2026 - 21:00 HS</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><MapPin size={18} /> Estadio Nacional</span>
-                    </div>
-
-                    <div className="glass-panel" style={{ marginBottom: '2rem' }}>
-                        <div className="ticket-row">
-                            <div className="ticket-info">
-                                <h4>Campo General / Platea Alta</h4>
-                                <p>Ubicación por orden de llegada.</p>
+                    <form onSubmit={handlePay}>
+                        <div className="form-group">
+                            <label className="form-label">Titular de la Tarjeta</label>
+                            <input type="text" required className="form-input" placeholder="Nombre completo" />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Número de Tarjeta (Mock)</label>
+                            <div style={{ position: 'relative' }}>
+                                <CreditCard size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '16px', top: '16px' }} />
+                                <input type="text" required className="form-input" placeholder="•••• •••• •••• ••••" style={{ paddingLeft: '44px' }} />
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                                <span className="ticket-price">$150.00</span>
-                                <div className="quantity-selector">
-                                    <button className="qty-btn" onClick={() => setQtyStall(Math.max(0, qtyStall - 1))}>-</button>
-                                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold', width: '20px', textAlign: 'center' }}>{qtyStall}</span>
-                                    <button className="qty-btn" onClick={() => setQtyStall(qtyStall + 1)}>+</button>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div className="form-group">
+                                <label className="form-label">Vencimiento</label>
+                                <input type="text" required className="form-input" placeholder="MM/AA" />
+                            </div>
+                            <div className="form-group">
+                                <label className="form-label">CVV</label>
+                                <div style={{ position: 'relative' }}>
+                                    <Lock size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '16px', top: '16px' }} />
+                                    <input type="password" required className="form-input" placeholder="•••" style={{ paddingLeft: '44px' }} maxLength={4} />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="ticket-row">
-                            <div className="ticket-info">
-                                <h4>VIP Front Stage - Meet & Greet</h4>
-                                <p>Acceso anticipado, merchandising oficial.</p>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                                <span className="ticket-price" style={{ color: 'var(--secondary)' }}>$350.00</span>
-                                <div className="quantity-selector">
-                                    <button className="qty-btn" onClick={() => setQtyVip(Math.max(0, qtyVip - 1))}>-</button>
-                                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold', width: '20px', textAlign: 'center' }}>{qtyVip}</span>
-                                    <button className="qty-btn" onClick={() => setQtyVip(qtyVip + 1)}>+</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '1rem', background: 'rgba(255, 71, 71, 0.1)', border: '1px solid var(--primary)', borderRadius: 'var(--radius-sm)', color: '#ffb3b3' }}>
-                        <Calendar size={20} /> Estas entradas tienen una retención temporal de 5:00 minutos. Completa el pago antes de que expiren.
-                    </div>
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            style={{ width: '100%', marginTop: '1rem' }}
+                            disabled={isProcessing}
+                        >
+                            {isProcessing ? 'Procesando Transacción...' : 'Confirmar y Pagar Orden'}
+                        </button>
+                    </form>
                 </div>
 
                 {/* Right Col - Summary */}
                 <div>
                     <div className="summary-panel glass-panel">
-                        <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', fontWeight: '700' }}>Resumen de Compra</h3>
+                        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: '700' }}>Resumen de Compra</h3>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <div style={{ fontWeight: 'bold' }}>COLDPLAY - Music of the Spheres</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Sector: VIP Front Stage</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Fila G - Asientos 4, 5</div>
+                        </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', color: 'var(--text-secondary)' }}>
                             <span>Entradas ({totalItems})</span>
@@ -86,14 +114,6 @@ const Checkout = () => {
                             <span>Total</span>
                             <span className="text-gradient">${(total * 1.1).toFixed(2)}</span>
                         </div>
-
-                        <button
-                            className="btn btn-primary"
-                            style={{ width: '100%', marginBottom: '1rem', opacity: total === 0 ? 0.5 : 1, pointerEvents: total === 0 ? 'none' : 'auto' }}
-                            onClick={handlePay}
-                        >
-                            <CreditCard size={20} /> Pagar Orden
-                        </button>
 
                         <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                             <ShieldCheck size={14} /> Pago Seguro 256-bit SSL
