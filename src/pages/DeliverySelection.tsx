@@ -1,19 +1,26 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Smartphone, ShieldCheck } from 'lucide-react';
 import EventHeader from '../components/EventHeader';
+import { useStore } from '../store/useStore';
 
 const DeliverySelection = () => {
     const navigate = useNavigate();
+    const { id } = useParams();
     const [selectedDelivery, setSelectedDelivery] = useState('eticket');
+    const { selectedEvent, fetchEventDetails } = useStore();
+
+    useEffect(() => {
+        if (id) fetchEventDetails(id);
+    }, [id, fetchEventDetails]);
 
     const handleContinue = () => {
-        navigate('/event/1/checkout');
+        navigate(`/event/${id || "1"}/checkout`);
     };
 
     return (
         <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
-            <EventHeader title="Ricardo Montaner" date="Domingo, 08 Marzo 2026 • 21:00 hs" timeRemaining="08:58" />
+            <EventHeader title={selectedEvent?.title || "Cargando evento..."} date={selectedEvent?.date || "Cargando..."} timeRemaining="08:58" />
 
             <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '3rem' }}>
                 {/* Left - Delivery Options */}

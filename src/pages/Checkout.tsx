@@ -1,4 +1,4 @@
-
+import { useEffect } from 'react';
 import { CreditCard, ShieldCheck, Mail, Lock } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
@@ -6,7 +6,11 @@ import { useStore } from '../store/useStore';
 const Checkout = () => {
     const navigate = useNavigate();
     const { id } = useParams();
-    const { checkoutProcessing: isProcessing, checkoutConfirmed: isConfirmed, processCheckout } = useStore();
+    const { checkoutProcessing: isProcessing, checkoutConfirmed: isConfirmed, processCheckout, selectedEvent, fetchEventDetails } = useStore();
+
+    useEffect(() => {
+        if (id) fetchEventDetails(id);
+    }, [id, fetchEventDetails]);
 
     const total = 700.00; // Mock total from 2 tickets of 350
     const totalItems = 2; // Mock
@@ -94,7 +98,7 @@ const Checkout = () => {
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: '700' }}>Resumen de Compra</h3>
 
                         <div style={{ marginBottom: '1.5rem' }}>
-                            <div style={{ fontWeight: 'bold' }}>COLDPLAY - Music of the Spheres</div>
+                            <div style={{ fontWeight: 'bold' }}>{selectedEvent?.title || "Evento"}</div>
                             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Sector: VIP Front Stage</div>
                             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Fila G - Asientos 4, 5</div>
                         </div>

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Info } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import EventHeader from '../components/EventHeader';
+import { useStore } from '../store/useStore';
 
 const MOCK_SECTORS = [
     { id: 'campo', name: 'Campo Sentado', price: 135000, status: 'available', blocks: [{ id: 'A', name: 'Bloque A' }, { id: 'B', name: 'Bloque B' }] },
@@ -12,11 +13,17 @@ const MOCK_SECTORS = [
 
 const StadiumMap = () => {
     const navigate = useNavigate();
+    const { id } = useParams();
     const [selectedSector, setSelectedSector] = useState<string | null>(null);
+    const { selectedEvent, fetchEventDetails } = useStore();
+
+    useEffect(() => {
+        if (id) fetchEventDetails(id);
+    }, [id, fetchEventDetails]);
 
     return (
         <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
-            <EventHeader title="Ricardo Montaner" date="Domingo, 08 Marzo 2026 • 21:00 hs" timeRemaining="09:54" />
+            <EventHeader title={selectedEvent?.title || "Cargando evento..."} date={selectedEvent?.date || "Cargando..."} timeRemaining="09:54" />
 
             <button className="btn btn-secondary" style={{ marginBottom: '1.5rem', marginTop: '1rem' }} onClick={() => navigate(-1)}>
                 &larr; Volver al Evento
@@ -76,7 +83,7 @@ const StadiumMap = () => {
                             onClick={() => {
                                 if (sec.status !== 'soldout') {
                                     if (selectedSector === sec.id) {
-                                        navigate(`/event/1/date/1/sector/${sec.id}/block/1/seats`);
+                                        navigate(`/event/${id || "1"}/date/1/sector/${sec.id}/block/1/seats`);
                                     } else {
                                         setSelectedSector(sec.id);
                                     }
@@ -99,7 +106,7 @@ const StadiumMap = () => {
                             {selectedSector === sec.id && sec.status !== 'soldout' && (
                                 <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}><Info size={16} style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle' }} /> Toca nuevamente para ver asientos</span>
-                                    <button className="btn btn-primary" onClick={() => navigate(`/event/1/date/1/sector/${sec.id}/block/1/seats`)}>
+                                    <button className="btn btn-primary" onClick={() => navigate(`/event/${id || "1"}/date/1/sector/${sec.id}/block/1/seats`)}>
                                         Ver Butacas
                                     </button>
                                 </div>
