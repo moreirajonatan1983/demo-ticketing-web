@@ -1,12 +1,21 @@
-import { useEffect } from 'react';
-import { CreditCard, ShieldCheck, Mail, Lock } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CreditCard, ShieldCheck, Mail, Lock, AlertTriangle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 
 const Checkout = () => {
     const navigate = useNavigate();
     const { id } = useParams();
-    const { checkoutProcessing: isProcessing, checkoutConfirmed: isConfirmed, processCheckout, selectedEvent, fetchEventDetails } = useStore();
+    const [simulateRejected, setSimulateRejected] = useState(false);
+    const {
+        checkoutProcessing: isProcessing,
+        checkoutConfirmed: isConfirmed,
+        checkoutRejected: isRejected,
+        processCheckout,
+        selectedEvent,
+        fetchEventDetails,
+        resetCheckout
+    } = useStore();
 
     useEffect(() => {
         if (id) fetchEventDetails(id);
@@ -17,9 +26,31 @@ const Checkout = () => {
 
     const handlePay = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Fire Redux / Zustand action
-        await processCheckout(id || "1", ["G4", "G5"]);
+        const method = simulateRejected ? 'REJECTED_CARD' : 'CREDIT_CARD';
+        await processCheckout(id || "1", ["G4", "G5"], method);
     };
+
+    // W-02: Pago rechazado - SAGA ejecutó la compensación (seats liberados)
+    if (isRejected) {
+        return (
+            <div className="animate-fade-in glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center', maxWidth: '600px', margin: '4rem auto' }}>
+                <div style={{ width: '80px', height: '80px', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+                    <AlertTriangle size={40} />
+                </div>
+                <h2 className="section-title" style={{ fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' }}>Pago Rechazado</h2>
+                <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: '1.6' }}>
+                    Tu pago no pudo procesarse. Los asientos fueron <strong>liberados automáticamente</strong> por el sistema SAGA.
+                </p>
+                <div style={{ padding: '1rem', background: 'rgba(239,68,68,0.1)', borderRadius: 'var(--radius-sm)', marginBottom: '2rem', fontSize: '0.9rem', color: '#ef4444' }}>
+                    Verificá los datos de tu tarjeta e intentá nuevamente.
+                </div>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                    <button className="btn btn-secondary" onClick={() => { resetCheckout(); navigate(-1); }}>Volver al Evento</button>
+                    <button className="btn btn-primary" onClick={() => resetCheckout()}>Reintentar Pago</button>
+                </div>
+            </div>
+        );
+    }
 
     if (isConfirmed) {
         return (
@@ -27,12 +58,12 @@ const Checkout = () => {
                 <div style={{ width: '80px', height: '80px', background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
                     <Mail size={40} />
                 </div>
-                <h2 className="section-title title-glow" style={{ fontSize: '2rem', marginBottom: '1rem' }}>Solicitud Recibida</h2>
+                <h2 className="section-title title-glow" style={{ fontSize: '2rem', marginBottom: '1rem' }}>¡Compra Exitosa!</h2>
                 <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '2.5rem', lineHeight: '1.6' }}>
-                    Tu solicitud de compra por <strong>{totalItems} entradas</strong> está siendo procesada de forma segura por nuestros servidores.
+                    Tu compra por <strong>{totalItems} entradas</strong> fue procesada exitosamente por el SAGA de AWS Step Functions.
                 </p>
                 <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', marginBottom: '3rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                    Recibirás un correo electrónico de confirmación con tus entradas en formato digital cuando el pago y la reserva se completen exitosamente.
+                    Recibirás un correo electrónico de confirmación con tus entradas en formato digital.
                 </div>
                 <button className="btn btn-primary" onClick={() => navigate('/mytickets')}>
                     Ir a Mis Entradas
@@ -81,13 +112,19 @@ const Checkout = () => {
                             </div>
                         </div>
 
+                        {/* Simulate rejected card toggle (W-05) */}
+                        <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            <span>🧪 Simular pago rechazado (SAGA test)</span>
+                            <input type="checkbox" checked={simulateRejected} onChange={e => setSimulateRejected(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                        </div>
+
                         <button
                             type="submit"
                             className="btn btn-primary"
-                            style={{ width: '100%', marginTop: '1rem' }}
+                            style={{ width: '100%', marginTop: '0.5rem' }}
                             disabled={isProcessing}
                         >
-                            {isProcessing ? 'Procesando Transacción...' : 'Confirmar y Pagar Orden'}
+                            {isProcessing ? '⏳ Procesando SAGA...' : simulateRejected ? '🧪 Pagar (Simular Rechazo)' : 'Confirmar y Pagar Orden'}
                         </button>
                     </form>
                 </div>

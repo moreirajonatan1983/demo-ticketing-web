@@ -31,7 +31,7 @@ const EventDetails = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
                 {/* Main Hero View */}
                 <div className="glass-panel" style={{ padding: 0, overflow: 'hidden', height: '400px', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ flex: 1, backgroundImage: `url('${event.image}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
+                    <div style={{ flex: 1, backgroundImage: `url('http://localhost:3008/media/events/${event.id}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
                     <div style={{ padding: '2rem', background: 'rgba(30, 31, 38, 0.9)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.2rem' }}>Próximo evento en</p>

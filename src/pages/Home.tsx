@@ -37,7 +37,7 @@ const Home = () => {
             <div className="event-grid">
                 {events.map(ev => (
                     <div key={ev.id} className="event-card" onClick={() => navigate(`/event/${ev.id}`)}>
-                        <div className="event-card-img" style={{ backgroundImage: `url(${ev.image})` }} />
+                        <div className="event-card-img" style={{ backgroundImage: `url(http://localhost:3008/media/events/${ev.id})` }} />
                         <div className="event-card-content">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                 <p className="event-date">{ev.date}</p>

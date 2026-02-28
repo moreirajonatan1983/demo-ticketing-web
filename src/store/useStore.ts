@@ -51,7 +51,10 @@ interface StoreState {
     // Purchase Context
     checkoutProcessing: boolean;
     checkoutConfirmed: boolean;
-    processCheckout: (eventId: string, seats: string[]) => Promise<void>;
+    checkoutRejected: boolean;       // W-02: pago rechazado
+    checkoutError: string | null;
+    sagaExecutionArn: string | null;
+    processCheckout: (eventId: string, seats: string[], paymentMethod?: string) => Promise<void>;
     resetCheckout: () => void;
 }
 
@@ -133,27 +136,82 @@ export const useStore = create<StoreState>((set, get) => ({
 
     checkoutProcessing: false,
     checkoutConfirmed: false,
-    processCheckout: async (eventId: string, seats: string[]) => {
-        set({ checkoutProcessing: true });
+    checkoutRejected: false,
+    checkoutError: null,
+    sagaExecutionArn: null,
+
+    // B-10: Trigger SAGA via Step Functions StartExecution instead of calling checkout-lambda directly
+    processCheckout: async (eventId: string, seats: string[], paymentMethod = 'CREDIT_CARD') => {
+        set({ checkoutProcessing: true, checkoutConfirmed: false, checkoutRejected: false, checkoutError: null });
         try {
-            const res = await fetch('http://localhost:3004/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            const STEP_FUNCTIONS_ENDPOINT = 'http://localhost:4566';
+            const STATE_MACHINE_ARN = 'arn:aws:states:us-east-1:000000000000:stateMachine:checkout-saga';
+
+            // Build the SAGA input payload
+            const sagaInput = {
+                seats: seats.map(seatId => ({ eventId, seatId })),
+                paymentPayload: {
                     event_id: eventId,
-                    seats: seats,
-                    method: "CREDIT_CARD"
+                    seats,
+                    method: paymentMethod
+                },
+                ticketPayload: {
+                    id: `TKT-${Date.now()}`,
+                    user_id: 'mock-user-123',
+                    event_id: eventId,
+                    event_name: get().selectedEvent?.title || 'Evento',
+                    date: get().selectedEvent?.date || '',
+                    location: get().selectedEvent?.venue || '',
+                    sector: 'Campo',
+                    status: 'PAID'
+                }
+            };
+
+            // StartExecution in LocalStack Step Functions
+            const startRes = await fetch(`${STEP_FUNCTIONS_ENDPOINT}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-amz-json-1.0',
+                    'X-Amz-Target': 'AWSStepFunctions.StartExecution'
+                },
+                body: JSON.stringify({
+                    stateMachineArn: STATE_MACHINE_ARN,
+                    input: JSON.stringify(sagaInput)
                 })
             });
-            if (!res.ok) throw new Error("Processing failed");
-            set({ checkoutProcessing: false, checkoutConfirmed: true });
 
-            // Invalidate tickets fetch cache
-            set({ ticketsFetched: false });
+            if (!startRes.ok) throw new Error('Failed to start SAGA execution');
+            const { executionArn } = await startRes.json();
+            set({ sagaExecutionArn: executionArn });
+
+            // Poll DescribeExecution until SUCCEEDED or FAILED
+            let status = 'RUNNING';
+            let attempts = 0;
+            while (status === 'RUNNING' && attempts < 30) {
+                await new Promise(r => setTimeout(r, 1000));
+                const describeRes = await fetch(`${STEP_FUNCTIONS_ENDPOINT}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-amz-json-1.0',
+                        'X-Amz-Target': 'AWSStepFunctions.DescribeExecution'
+                    },
+                    body: JSON.stringify({ executionArn })
+                });
+                const execution = await describeRes.json();
+                status = execution.status;
+                attempts++;
+            }
+
+            if (status === 'SUCCEEDED') {
+                set({ checkoutProcessing: false, checkoutConfirmed: true, ticketsFetched: false });
+            } else {
+                set({ checkoutProcessing: false, checkoutRejected: true, checkoutError: 'Pago rechazado o asientos no disponibles' });
+            }
         } catch (err) {
-            console.error(err);
-            set({ checkoutProcessing: false });
+            console.error('[SAGA] Error executing checkout SAGA:', err);
+            set({ checkoutProcessing: false, checkoutError: String(err) });
         }
     },
-    resetCheckout: () => set({ checkoutProcessing: false, checkoutConfirmed: false })
+
+    resetCheckout: () => set({ checkoutProcessing: false, checkoutConfirmed: false, checkoutRejected: false, checkoutError: null, sagaExecutionArn: null })
 }));
