@@ -7,6 +7,7 @@ import EventDetails from './pages/EventDetails';
 import StadiumMap from './pages/StadiumMap';
 import SeatSelection from './pages/SeatSelection';
 import DeliverySelection from './pages/DeliverySelection';
+import WaitingRoom from './pages/WaitingRoom';
 import Checkout from './pages/Checkout';
 import MyTickets from './pages/MyTickets';
 
@@ -22,6 +23,7 @@ function App() {
           <Route path="/event/:id/date/:dateId/sectors" element={<StadiumMap />} />
           <Route path="/event/:id/date/:dateId/sector/:sectorId/block/:blockId/seats" element={<SeatSelection />} />
           <Route path="/event/:id/delivery" element={<DeliverySelection />} />
+          <Route path="/event/:id/waiting-room" element={<WaitingRoom />} />
           <Route path="/event/:id/checkout" element={<Checkout />} />
           <Route path="/mytickets" element={<MyTickets />} />
         </Routes>

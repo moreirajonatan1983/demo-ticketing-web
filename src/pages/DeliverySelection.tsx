@@ -15,7 +15,8 @@ const DeliverySelection = () => {
     }, [id, fetchEventDetails]);
 
     const handleContinue = () => {
-        navigate(`/event/${id || "1"}/checkout`);
+        // W-03: Pass through the Virtual Waiting Room before reaching checkout
+        navigate(`/event/${id || "1"}/waiting-room`);
     };
 
     return (
