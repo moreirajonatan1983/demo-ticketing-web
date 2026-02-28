@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Ticket, LogIn, Search, Menu, X, User, ChevronDown, List, Mail } from 'lucide-react';
+import { Ticket, LogIn, Search, Menu, X, User, List, Mail } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
     const location = useLocation();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isAccountOpen, setIsAccountOpen] = useState(true);
 
     // Asumiremos que el usuario está "logueado" temporalmente para mostrar el menú
     const isLoggedIn = true;
@@ -76,41 +75,54 @@ const Navbar = () => {
                 {/* Sidebar Menu Items */}
                 <div style={{ padding: '1rem 0', flex: 1, overflowY: 'auto' }}>
 
-                    {/* Mi Cuenta Dropdown */}
-                    <div style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                        <div
-                            style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem' }}
-                            onClick={() => setIsAccountOpen(!isAccountOpen)}
-                        >
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><User size={20} color="var(--text-secondary)" /> Mi cuenta</span>
-                            <ChevronDown size={18} color="var(--primary)" style={{ transform: isAccountOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
-                        </div>
-
-                        {/* Dropdown Items */}
-                        {isAccountOpen && (
-                            <div style={{ background: 'rgba(255,255,255,0.03)' }}>
-                                <div style={{ padding: '1rem 1.5rem 1rem 3.5rem', cursor: 'pointer', color: 'var(--primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '12px' }} onClick={() => setIsMenuOpen(false)}>
-                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--primary)' }}></div>
-                                    Datos personales
-                                </div>
-                                <div style={{ padding: '1rem 1.5rem 1rem 3.5rem', cursor: 'not-allowed', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '12px', borderTop: '1px solid rgba(255,255,255,0.02)' }}>
-                                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-secondary)' }}></div>
-                                    Historial
-                                </div>
-                            </div>
-                        )}
+                    {/* Sección Principal */}
+                    <div style={{ padding: '0.5rem 1.5rem', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>Tu Cuenta</span>
                     </div>
 
-                    {/* Mis compras */}
-                    <Link to="/mytickets" style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setIsMenuOpen(false)}>
-                        <div style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem', borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
-                            <List size={20} color="var(--text-secondary)" /> Mis compras
+                    <Link to="/profile" style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setIsMenuOpen(false)}>
+                        <div style={{ padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: '500', fontSize: '1.05rem', transition: 'background 0.2s', borderLeft: '3px solid transparent' }} onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderLeft = '3px solid var(--primary)'; }} onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeft = '3px solid transparent'; }}>
+                            <User size={20} color="var(--primary)" /> Mi Perfil
                         </div>
                     </Link>
 
-                    {/* Contacto */}
-                    <div style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem', borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
-                        <Mail size={20} color="var(--text-secondary)" /> Contacto
+                    <Link to="/mytickets" style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setIsMenuOpen(false)}>
+                        <div style={{ padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: '500', fontSize: '1.05rem', transition: 'background 0.2s', borderLeft: '3px solid transparent' }} onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderLeft = '3px solid var(--primary)'; }} onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeft = '3px solid transparent'; }}>
+                            <Ticket size={20} color="var(--primary)" /> Mis Entradas
+                            <span style={{ marginLeft: 'auto', background: 'var(--primary)', color: 'white', fontSize: '0.75rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>2</span>
+                        </div>
+                    </Link>
+
+                    <Link to="/payments" style={{ textDecoration: 'none', color: 'inherit' }} onClick={() => setIsMenuOpen(false)}>
+                        <div style={{ padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: '500', fontSize: '1.05rem', transition: 'background 0.2s', borderLeft: '3px solid transparent' }} onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderLeft = '3px solid var(--primary)'; }} onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderLeft = '3px solid transparent'; }}>
+                            <List size={20} color="var(--primary)" /> Medios de Pago
+                        </div>
+                    </Link>
+
+                    <div style={{ width: '100%', height: '1px', background: 'var(--glass-border)', margin: '1rem 0' }}></div>
+
+                    {/* Soporte */}
+                    <div style={{ padding: '0.5rem 1.5rem', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold' }}>Asistencia</span>
+                    </div>
+
+                    <div style={{ padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontWeight: '500', fontSize: '1.05rem', transition: 'background 0.2s', color: 'var(--text-secondary)', borderLeft: '3px solid transparent' }} onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'white'; }} onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
+                        <Mail size={20} /> Centro de Ayuda
+                    </div>
+
+                    {/* Logout */}
+                    <div style={{ marginTop: 'auto', padding: '1.5rem' }}>
+                        <button
+                            className="btn btn-secondary"
+                            style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', border: '1px solid rgba(239, 68, 68, 0.3)', color: 'var(--error)' }}
+                            onClick={() => {
+                                setIsMenuOpen(false);
+                                // Lógica de logout simulada
+                                window.location.href = '/login';
+                            }}
+                        >
+                            <LogIn size={18} style={{ transform: 'rotate(180deg)' }} /> Cerrar Sesión
+                        </button>
                     </div>
 
                 </div>
