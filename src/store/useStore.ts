@@ -19,6 +19,15 @@ export interface TicketData {
     total_paid: number;
 }
 
+export interface ShowData {
+    id: string;
+    event_id: string;
+    date: string;
+    time: string;
+    status: string;
+}
+
+
 interface StoreState {
     events: EventData[];
     eventsFetched: boolean;
@@ -26,6 +35,10 @@ interface StoreState {
 
     selectedEvent: EventData | null;
     fetchEventDetails: (id: string) => Promise<void>;
+
+    shows: ShowData[];
+    showsFetchedForEventId: string | null;
+    fetchShows: (eventId: string) => Promise<void>;
 
     seatsGrid: any[][];
     gridFetchedForEventId: string | null;
@@ -68,6 +81,19 @@ export const useStore = create<StoreState>((set, get) => ({
             const res = await fetch(`http://localhost:3000/events/${id}`);
             const data = await res.json();
             set({ selectedEvent: data });
+        } catch (err) {
+            console.error(err);
+        }
+    },
+
+    shows: [],
+    showsFetchedForEventId: null,
+    fetchShows: async (eventId: string) => {
+        if (get().showsFetchedForEventId === eventId) return;
+        try {
+            const res = await fetch(`http://localhost:3007/events/${eventId}/shows`);
+            const data = await res.json();
+            set({ shows: data, showsFetchedForEventId: eventId });
         } catch (err) {
             console.error(err);
         }

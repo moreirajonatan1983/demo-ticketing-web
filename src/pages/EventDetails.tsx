@@ -6,11 +6,14 @@ import { useStore } from '../store/useStore';
 const EventDetails = () => {
     const navigate = useNavigate();
     const { id } = useParams();
-    const { selectedEvent: event, fetchEventDetails } = useStore();
+    const { selectedEvent: event, fetchEventDetails, shows, fetchShows } = useStore();
 
     useEffect(() => {
-        if (id) fetchEventDetails(id);
-    }, [id, fetchEventDetails]);
+        if (id) {
+            fetchEventDetails(id);
+            fetchShows(id);
+        }
+    }, [id, fetchEventDetails, fetchShows]);
 
     if (!event) {
         return <div className="animate-fade-in" style={{ padding: '4rem', textAlign: 'center' }}>Cargando evento...</div>;
@@ -50,35 +53,45 @@ const EventDetails = () => {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1 }}>
 
-                        {/* Option 1: Available */}
-                        <div
-                            style={{ padding: '1.5rem', border: '1px solid var(--primary)', borderRadius: 'var(--radius-md)', background: 'rgba(124, 58, 237, 0.1)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'var(--transition)' }}
-                            onClick={() => navigate(`/event/${event.id}/date/1/sectors`)}
-                            onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--glow)'; }}
-                            onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-                        >
-                            <div>
-                                <p style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '4px' }}>{event.status}</p>
-                                <h4 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '4px' }}>{event.date}</h4>
-                                <div style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14} /> 21:00 hs</span>
-                                </div>
-                            </div>
-                            <ChevronRight color="var(--primary)" size={30} />
-                        </div>
+                        {shows.length === 0 && <p>Cargando funciones...</p>}
 
-                        {/* Option 2: Sold Out */}
-                        <div
-                            style={{ padding: '1.5rem', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)', background: 'rgba(255, 255, 255, 0.02)', cursor: 'not-allowed', opacity: 0.6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                        >
-                            <div>
-                                <p style={{ color: 'var(--error)', fontWeight: 'bold', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '4px' }}>Agotado</p>
-                                <h4 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '4px', textDecoration: 'line-through' }}>27 Febrero</h4>
-                                <div style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14} /> 21:00 hs</span>
+                        {shows.map((show) => {
+                            const isAvailable = show.status === 'available';
+
+                            return (
+                                <div
+                                    key={show.id}
+                                    style={{
+                                        padding: '1.5rem',
+                                        border: isAvailable ? '1px solid var(--primary)' : '1px solid var(--glass-border)',
+                                        borderRadius: 'var(--radius-md)',
+                                        background: isAvailable ? 'rgba(124, 58, 237, 0.1)' : 'rgba(255, 255, 255, 0.02)',
+                                        cursor: isAvailable ? 'pointer' : 'not-allowed',
+                                        opacity: isAvailable ? 1 : 0.6,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        transition: 'var(--transition)'
+                                    }}
+                                    onClick={() => isAvailable && navigate(`/event/${event.id}/date/${show.id}/sectors`)}
+                                    {...(isAvailable ? {
+                                        onMouseOver: (e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--glow)'; },
+                                        onMouseOut: (e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }
+                                    } : {})}
+                                >
+                                    <div>
+                                        <p style={{ color: isAvailable ? 'var(--primary)' : 'var(--error)', fontWeight: 'bold', fontSize: '0.8rem', textTransform: 'uppercase', marginBottom: '4px' }}>
+                                            {isAvailable ? 'Disponible' : 'Agotado'}
+                                        </p>
+                                        <h4 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '4px', textDecoration: isAvailable ? 'none' : 'line-through' }}>{show.date}</h4>
+                                        <div style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14} /> {show.time}</span>
+                                        </div>
+                                    </div>
+                                    {isAvailable && <ChevronRight color="var(--primary)" size={30} />}
                                 </div>
-                            </div>
-                        </div>
+                            );
+                        })}
 
                     </div>
                 </div>
