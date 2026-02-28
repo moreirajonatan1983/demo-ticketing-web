@@ -1,27 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Ticket, Calendar, MapPin, QrCode } from 'lucide-react';
-
-interface TicketData {
-    id: string; // The Go struct uses ID, but JSON tag might be id
-    event_id: string; // The Go struct might map JSON differently, let's just make sure
-    user_id: string;
-    purchase_date: string;
-    status: string;
-    seats: string[];
-    total_paid: number;
-}
+import { useNavigate } from 'react-router-dom';
+import { useStore } from '../store/useStore';
 
 const MyTickets = () => {
-    const [tickets, setTickets] = useState<TicketData[]>([]);
+    const navigate = useNavigate();
+    const { myTickets: tickets, fetchMyTickets } = useStore();
 
     useEffect(() => {
-        fetch('http://localhost:3006/tickets/me?userId=mock_user')
-            .then(res => res.json())
-            .then(data => setTickets(data))
-            .catch(err => console.error("Error fetching tickets:", err));
-    }, []);
+        fetchMyTickets();
+    }, [fetchMyTickets]);
     return (
         <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
+            <button className="btn btn-secondary" style={{ marginBottom: '1.5rem' }} onClick={() => navigate('/')}>
+                &larr; Volver a Inicio
+            </button>
             <h2 className="section-title title-glow" style={{ textAlign: 'left', marginBottom: '1rem' }}>Mis Entradas</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '3rem' }}>Gestiona tus tickets adquiridos. Presenta el código QR en la puerta del evento.</p>
 

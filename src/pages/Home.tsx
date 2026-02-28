@@ -1,26 +1,15 @@
 import { MapPin, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-
-interface EventData {
-    id: string;
-    title: string;
-    date: string;
-    venue: string;
-    image: string;
-    status: string;
-}
+import { useEffect } from 'react';
+import { useStore } from '../store/useStore';
 
 const Home = () => {
     const navigate = useNavigate();
-    const [events, setEvents] = useState<EventData[]>([]);
+    const { events, fetchEvents } = useStore();
 
     useEffect(() => {
-        fetch('http://localhost:3000/events')
-            .then(res => res.json())
-            .then(data => setEvents(data))
-            .catch(err => console.error("Error fetching events:", err));
-    }, []);
+        fetchEvents();
+    }, [fetchEvents]);
 
     return (
         <div className="animate-fade-in">

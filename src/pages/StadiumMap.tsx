@@ -18,6 +18,10 @@ const StadiumMap = () => {
         <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
             <EventHeader title="Ricardo Montaner" date="Domingo, 08 Marzo 2026 • 21:00 hs" timeRemaining="09:54" />
 
+            <button className="btn btn-secondary" style={{ marginBottom: '1.5rem', marginTop: '1rem' }} onClick={() => navigate(-1)}>
+                &larr; Volver al Evento
+            </button>
+
             <h2 className="section-title title-glow" style={{ fontSize: '2rem', marginBottom: '2rem' }}>Seleccionar Sector</h2>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }}>

@@ -1,30 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import { useStore } from '../store/useStore';
 import EventHeader from '../components/EventHeader';
 
 const SeatSelection = () => {
     const navigate = useNavigate();
     const { id, sectorId } = useParams();
     const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
-    const [grid, setGrid] = useState<any[][]>([]);
+    const { seatsGrid: grid, fetchSeats } = useStore();
     const MAX_TICKETS = 4;
 
     useEffect(() => {
-        if (!id) return;
-        fetch(`http://localhost:3005/events/${id}/seats`)
-            .then(res => res.json())
-            .then(data => {
-                const rowsObj: Record<string, any[]> = {};
-                data.forEach((seat: any) => {
-                    if (!rowsObj[seat.row]) rowsObj[seat.row] = [];
-                    rowsObj[seat.row].push(seat);
-                });
-                const sortedRows = Object.keys(rowsObj).sort().map(r => rowsObj[r].sort((a: any, b: any) => a.number - b.number));
-                setGrid(sortedRows);
-            })
-            .catch(err => console.error("Error fetching seats", err));
-    }, [id]);
+        if (id) fetchSeats(id);
+    }, [id, fetchSeats]);
 
     const parseSectorName = (id?: string) => {
         if (!id) return 'Platea Alta';

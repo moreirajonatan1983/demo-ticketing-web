@@ -1,28 +1,16 @@
 import { ChevronRight, Clock } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-
-interface EventData {
-    id: string;
-    title: string;
-    date: string;
-    venue: string;
-    image: string;
-    status: string;
-}
+import { useEffect } from 'react';
+import { useStore } from '../store/useStore';
 
 const EventDetails = () => {
     const navigate = useNavigate();
     const { id } = useParams();
-    const [event, setEvent] = useState<EventData | null>(null);
+    const { selectedEvent: event, fetchEventDetails } = useStore();
 
     useEffect(() => {
-        if (!id) return;
-        fetch(`http://localhost:3000/events/${id}`)
-            .then(res => res.json())
-            .then(data => setEvent(data))
-            .catch(err => console.error("Error fetching event:", err));
-    }, [id]);
+        if (id) fetchEventDetails(id);
+    }, [id, fetchEventDetails]);
 
     if (!event) {
         return <div className="animate-fade-in" style={{ padding: '4rem', textAlign: 'center' }}>Cargando evento...</div>;
@@ -30,7 +18,7 @@ const EventDetails = () => {
 
     return (
         <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
-            <button className="btn btn-secondary" style={{ marginBottom: '1.5rem' }} onClick={() => navigate('/')}>
+            <button className="btn btn-secondary" style={{ marginBottom: '1.5rem' }} onClick={() => navigate(-1)}>
                 &larr; Volver a Cartelera
             </button>
 
