@@ -1,45 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import EventHeader from '../components/EventHeader';
 
-const TOTAL_ROWS = 8;
-const SEATS_PER_ROW = 12;
-
-// Generar una grilla mock (Filas A-H, Asientos 1-12)
-const generateMockSeats = () => {
-    const rows = 'ABCDEFGH'.split('');
-    const grid = [];
-
-    for (let r = 0; r < TOTAL_ROWS; r++) {
-        const rowSeats = [];
-        for (let s = 1; s <= SEATS_PER_ROW; s++) {
-            const id = `${rows[r]}${s}`;
-            // Simular diferentes estados
-            let status = 'available'; // Default
-            if (r < 2 && s > 3 && s < 9) status = 'occupied';
-            else if (r === 4 && s > 8) status = 'occupied';
-            else if (r === 6 && (s === 2 || s === 3)) status = 'processing'; // Simulando puja concurrente
-
-            rowSeats.push({
-                id,
-                row: rows[r],
-                number: s,
-                status
-            });
-        }
-        grid.push(rowSeats);
-    }
-    return grid;
-};
-
-const INITIAL_GRID = generateMockSeats();
-
 const SeatSelection = () => {
     const navigate = useNavigate();
-    const { sectorId } = useParams();
+    const { id, sectorId } = useParams();
     const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+    const [grid, setGrid] = useState<any[][]>([]);
     const MAX_TICKETS = 4;
+
+    useEffect(() => {
+        if (!id) return;
+        fetch(`http://localhost:3005/events/${id}/seats`)
+            .then(res => res.json())
+            .then(data => {
+                const rowsObj: Record<string, any[]> = {};
+                data.forEach((seat: any) => {
+                    if (!rowsObj[seat.row]) rowsObj[seat.row] = [];
+                    rowsObj[seat.row].push(seat);
+                });
+                const sortedRows = Object.keys(rowsObj).sort().map(r => rowsObj[r].sort((a: any, b: any) => a.number - b.number));
+                setGrid(sortedRows);
+            })
+            .catch(err => console.error("Error fetching seats", err));
+    }, [id]);
 
     const parseSectorName = (id?: string) => {
         if (!id) return 'Platea Alta';
@@ -62,7 +47,7 @@ const SeatSelection = () => {
 
     const handleContinue = () => {
         if (selectedSeats.length === 0) return;
-        navigate(`/event/1/delivery`);
+        navigate(`/event/${id || '1'}/delivery`);
     };
 
     return (
@@ -106,12 +91,12 @@ const SeatSelection = () => {
 
                 {/* Grilla */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {INITIAL_GRID.map((rowSeats, rIdx) => (
+                    {grid.map((rowSeats, rIdx) => (
                         <div key={`row-${rIdx}`} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                             <span style={{ width: '20px', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{rowSeats[0].row}</span>
 
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                {rowSeats.map((seat) => {
+                                {rowSeats.map((seat: any) => {
                                     const isSelected = selectedSeats.includes(seat.id);
                                     let bgColor = 'rgba(124, 58, 237, 0.1)';
                                     let borderColor = 'var(--primary)';

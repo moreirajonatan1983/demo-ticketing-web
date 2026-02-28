@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { CreditCard, ShieldCheck, Mail, Lock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const Checkout = () => {
     const navigate = useNavigate();
+    const { id } = useParams();
     const [isProcessing, setIsProcessing] = useState(false);
     const [isConfirmed, setIsConfirmed] = useState(false);
 
@@ -14,11 +15,24 @@ const Checkout = () => {
         e.preventDefault();
         setIsProcessing(true);
 
-        // Simulating immediate async acknowledgement (Not actual processing)
-        setTimeout(() => {
-            setIsProcessing(false);
-            setIsConfirmed(true);
-        }, 1500);
+        fetch('http://localhost:3004/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                event_id: id || "1",
+                seats: ["G4", "G5"], // In a real app we would receive this from context
+                method: "CREDIT_CARD"
+            })
+        })
+            .then(res => {
+                if (!res.ok) throw new Error("Processing failed");
+                setIsProcessing(false);
+                setIsConfirmed(true);
+            })
+            .catch(err => {
+                console.error("Payment error:", err);
+                setIsProcessing(false);
+            });
     };
 
     if (isConfirmed) {

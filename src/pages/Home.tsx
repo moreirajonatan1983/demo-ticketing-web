@@ -1,35 +1,26 @@
 import { MapPin, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 
-const MOCK_EVENTS = [
-    {
-        id: 1,
-        title: 'COLDPLAY - Music of the Spheres',
-        date: '15 OCT 2026',
-        venue: 'Estadio Nacional',
-        image: 'https://images.unsplash.com/photo-1540039155733-d7696d819924?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        status: 'Disponible'
-    },
-    {
-        id: 2,
-        title: 'THE WEEKND - After Hours Tour',
-        date: '22 NOV 2026',
-        venue: 'Movistar Arena',
-        image: 'https://images.unsplash.com/photo-1493225457124-a1a2a5f5f4b2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        status: 'Pocos Tickets'
-    },
-    {
-        id: 3,
-        title: 'DUA LIPA - Radical Optimism',
-        date: '04 DIC 2026',
-        venue: 'Hipódromo',
-        image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        status: 'Sold Out'
-    }
-];
+interface EventData {
+    id: string;
+    title: string;
+    date: string;
+    venue: string;
+    image: string;
+    status: string;
+}
 
 const Home = () => {
     const navigate = useNavigate();
+    const [events, setEvents] = useState<EventData[]>([]);
+
+    useEffect(() => {
+        fetch('http://localhost:3000/events')
+            .then(res => res.json())
+            .then(data => setEvents(data))
+            .catch(err => console.error("Error fetching events:", err));
+    }, []);
 
     return (
         <div className="animate-fade-in">
@@ -55,7 +46,7 @@ const Home = () => {
             </div>
 
             <div className="event-grid">
-                {MOCK_EVENTS.map(ev => (
+                {events.map(ev => (
                     <div key={ev.id} className="event-card" onClick={() => navigate(`/event/${ev.id}`)}>
                         <div className="event-card-img" style={{ backgroundImage: `url(${ev.image})` }} />
                         <div className="event-card-content">
