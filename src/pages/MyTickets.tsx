@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Download, QrCode, Calendar, MapPin, Ticket, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useStore, TicketData } from '../store/useStore';
+import { useStore, type TicketData } from '../store/useStore';
 
 const TICKETS_API = 'http://localhost:3006';
 

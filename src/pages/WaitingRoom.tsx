@@ -5,7 +5,7 @@ import { Users, Clock, CheckCircle, Wifi } from 'lucide-react';
 const WAITING_ROOM_URL = 'http://localhost:8082';
 const POLL_INTERVAL_MS = 3000;
 
-type QueueStatus = 'WAITING' | 'ADMITTED' | 'EXPIRED' | 'JOINING' | 'ERROR';
+type QueueStatus = 'WAITING' | 'ADMITTED' | 'EXPIRED' | 'JOINING' | 'ERROR' | 'CONFLICT';
 
 interface WaitingToken {
     tokenId: string;
@@ -40,7 +40,13 @@ const WaitingRoom = () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: 'mock-user-123', eventId: id || '1' })
                 });
-                if (!res.ok) throw new Error('Failed to join');
+                if (!res.ok) {
+                    if (res.status === 409) {
+                        setStatus('CONFLICT');
+                        return;
+                    }
+                    throw new Error('Failed to join');
+                }
                 const data: WaitingToken = await res.json();
                 setToken(data);
                 setStatus(data.status);
@@ -115,7 +121,7 @@ const WaitingRoom = () => {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: status === 'ADMITTED'
                         ? 'rgba(16,185,129,0.2)'
-                        : status === 'ERROR'
+                        : (status === 'ERROR' || status === 'CONFLICT')
                             ? 'rgba(239,68,68,0.2)'
                             : 'rgba(0,210,255,0.15)',
                     border: `2px solid ${status === 'ADMITTED' ? 'rgba(16,185,129,0.4)' : 'rgba(0,210,255,0.2)'}`,
@@ -123,7 +129,7 @@ const WaitingRoom = () => {
                 }}>
                     {status === 'ADMITTED'
                         ? <CheckCircle size={36} color="#10b981" />
-                        : status === 'ERROR'
+                        : (status === 'ERROR' || status === 'CONFLICT')
                             ? <Wifi size={36} color="#ef4444" />
                             : <Users size={36} color="var(--secondary)" />}
                 </div>
@@ -241,6 +247,20 @@ const WaitingRoom = () => {
                             <button className="btn btn-primary" onClick={() => navigate(`/event/${id}/checkout`)}>
                                 Ir al Checkout
                             </button>
+                        </div>
+                    </>
+                )}
+
+                {status === 'CONFLICT' && (
+                    <>
+                        <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '1rem', color: '#ef4444' }}>
+                            Límite Alcanzado
+                        </h2>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
+                            Has alcanzado el límite máximo de tickets permitido para este evento o función.
+                        </p>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                            <button className="btn btn-secondary" onClick={() => navigate('/')}>Volver al Inicio</button>
                         </div>
                     </>
                 )}

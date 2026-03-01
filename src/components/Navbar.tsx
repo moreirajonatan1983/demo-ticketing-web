@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Ticket, LogIn, Search, Menu, X, User, List, Mail } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useStore } from '../store/useStore';
 
 const Navbar = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-    // Asumiremos que el usuario está "logueado" temporalmente para mostrar el menú
-    const isLoggedIn = true;
+    const { isAuthenticated, user, logout } = useStore();
 
     return (
         <>
@@ -24,7 +24,7 @@ const Navbar = () => {
                         </span>
                     </Link>
 
-                    {!isLoggedIn ? (
+                    {!isAuthenticated ? (
                         <Link to="/login" className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.9rem' }}>
                             <LogIn size={18} /> Iniciar Sesión
                         </Link>
@@ -112,13 +112,17 @@ const Navbar = () => {
 
                     {/* Logout */}
                     <div style={{ marginTop: 'auto', padding: '1.5rem' }}>
+                        <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Logueado como:</p>
+                            <p style={{ fontSize: '0.9rem', color: 'white', fontWeight: 'bold' }}>{user?.email}</p>
+                        </div>
                         <button
                             className="btn btn-secondary"
                             style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', border: '1px solid rgba(239, 68, 68, 0.3)', color: 'var(--error)' }}
                             onClick={() => {
                                 setIsMenuOpen(false);
-                                // Lógica de logout simulada
-                                window.location.href = '/login';
+                                logout();
+                                navigate('/login');
                             }}
                         >
                             <LogIn size={18} style={{ transform: 'rotate(180deg)' }} /> Cerrar Sesión

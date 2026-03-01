@@ -1,5 +1,27 @@
 import { create } from 'zustand';
 
+// ── Helper: construye los headers de autenticación ──────────────
+const API_KEY = import.meta.env.VITE_API_KEY || 'dev-local-key';
+
+/** Headers para endpoints públicos (solo necesitan API Key) */
+const publicHeaders = () => ({
+    'Content-Type': 'application/json',
+    'x-api-key': API_KEY,
+});
+
+/** Headers para endpoints protegidos (API Key + JWT del usuario logueado) */
+const authHeaders = () => {
+    const raw = localStorage.getItem('auth_user');
+    const idToken = raw ? JSON.parse(raw).idToken : null;
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+    };
+    if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+    return headers;
+};
+// ────────────────────────────────────────────────────────────────
+
 export interface EventData {
     id: string;
     title: string;
@@ -48,6 +70,13 @@ interface StoreState {
     ticketsFetched: boolean;
     fetchMyTickets: () => Promise<void>;
 
+    // Auth Context
+    user: { id: string; name?: string; email: string; idToken?: string } | null;
+    isAuthenticated: boolean;
+    login: (email: string) => void;
+    loginWithCognito: (user: { id: string; name: string; email: string; idToken: string }) => void;
+    logout: () => void;
+
     // Purchase Context
     checkoutProcessing: boolean;
     checkoutConfirmed: boolean;
@@ -58,17 +87,79 @@ interface StoreState {
     resetCheckout: () => void;
 }
 
+// ── Datos de ejemplo para desarrollo local ──────────────────────
+const MOCK_EVENTS: EventData[] = [
+    {
+        id: '1',
+        title: 'COLDPLAY - Music of the Spheres',
+        date: 'Oct 15, 2026',
+        venue: 'Estadio Nacional',
+        image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&auto=format&fit=crop&q=80',
+        status: 'Sold Out',
+    },
+    {
+        id: '2',
+        title: 'The Weeknd - After Hours',
+        date: 'Nov 02, 2026',
+        venue: 'Movistar Arena',
+        image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&auto=format&fit=crop&q=80',
+        status: 'Últimas Entradas',
+    },
+    {
+        id: '3',
+        title: 'Dua Lipa - Radical Optimism',
+        date: 'Dec 10, 2026',
+        venue: 'Estadio Bicentenario',
+        image: 'https://images.unsplash.com/photo-1540039155732-6761b54cb111?w=800&auto=format&fit=crop&q=80',
+        status: 'Disponible',
+    },
+];
+
+// Shows de ejemplo por evento (IDs alineados con backend real)
+const MOCK_SHOWS: Record<string, ShowData[]> = {
+    '1': [
+        { id: 'show-1-a', event_id: '1', date: 'Oct 15, 2026', time: '20:00', status: 'available' },
+        { id: 'show-1-b', event_id: '1', date: 'Oct 16, 2026', time: '19:00', status: 'available' },
+    ],
+    '2': [
+        { id: 'show-2-a', event_id: '2', date: 'Nov 02, 2026', time: '21:00', status: 'available' },
+        { id: 'show-2-b', event_id: '2', date: 'Nov 03, 2026', time: '20:00', status: 'available' },
+    ],
+    '3': [
+        { id: 'show-3-a', event_id: '3', date: 'Dec 10, 2026', time: '21:00', status: 'available' },
+        { id: 'show-3-b', event_id: '3', date: 'Dec 11, 2026', time: '19:00', status: 'available' },
+    ],
+};
+// ────────────────────────────────────────────────────────────────
+
 export const useStore = create<StoreState>((set, get) => ({
     events: [],
     eventsFetched: false,
     fetchEvents: async () => {
         if (get().eventsFetched) return;
         try {
-            const res = await fetch('http://localhost:3000/events');
+            const res = await fetch('http://localhost:3000/events', { headers: publicHeaders() });
+            if (!res.ok) throw new Error('API not available');
             const data = await res.json();
-            set({ events: data, eventsFetched: true });
+            const formattedData = data.map((ev: any) => {
+                if (!ev.image || !ev.image.startsWith('http')) {
+                    const fallbackImages = [
+                        'https://images.unsplash.com/photo-1540039155732-6761b54cb111?w=800&auto=format&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&auto=format&fit=crop&q=80',
+                        'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&auto=format&fit=crop&q=80'
+                    ];
+                    const idx = [...ev.id.toString()].reduce((acc, char) => acc + char.charCodeAt(0), 0) % fallbackImages.length;
+                    ev.image = fallbackImages[idx];
+                }
+                if (ev.date && ev.date.includes('Octubre')) ev.date = 'Oct 15, 2026';
+                if (ev.date && ev.date.includes('Noviembre')) ev.date = 'Nov 02, 2026';
+                if (ev.date && ev.date.includes('Diciembre')) ev.date = 'Dec 10, 2026';
+                return ev;
+            });
+            set({ events: formattedData, eventsFetched: true });
         } catch (err) {
-            console.error(err);
+            console.warn('[DEV] Backend no disponible — cargando eventos de ejemplo locales.');
+            set({ events: MOCK_EVENTS, eventsFetched: true });
         }
     },
 
@@ -81,9 +172,21 @@ export const useStore = create<StoreState>((set, get) => ({
             return;
         }
         try {
-            const res = await fetch(`http://localhost:3000/events/${id}`);
-            const data = await res.json();
-            set({ selectedEvent: data });
+            const res = await fetch(`http://localhost:3000/events/${id}`, { headers: publicHeaders() });
+            const ev = await res.json();
+            if (!ev.image || !ev.image.startsWith('http')) {
+                const fallbackImages = [
+                    'https://images.unsplash.com/photo-1540039155732-6761b54cb111?w=800&auto=format&fit=crop&q=80',
+                    'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&auto=format&fit=crop&q=80',
+                    'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&auto=format&fit=crop&q=80'
+                ];
+                const idx = [...ev.id.toString()].reduce((acc, char) => acc + char.charCodeAt(0), 0) % fallbackImages.length;
+                ev.image = fallbackImages[idx];
+            }
+            if (ev.date && ev.date.includes('Octubre')) ev.date = 'Oct 15, 2026';
+            if (ev.date && ev.date.includes('Noviembre')) ev.date = 'Nov 02, 2026';
+            if (ev.date && ev.date.includes('Diciembre')) ev.date = 'Dec 10, 2026';
+            set({ selectedEvent: ev });
         } catch (err) {
             console.error(err);
         }
@@ -94,11 +197,21 @@ export const useStore = create<StoreState>((set, get) => ({
     fetchShows: async (eventId: string) => {
         if (get().showsFetchedForEventId === eventId) return;
         try {
-            const res = await fetch(`http://localhost:3007/events/${eventId}/shows`);
+            const res = await fetch(`http://localhost:3007/events/${eventId}/shows`, { headers: publicHeaders() });
+            if (!res.ok) throw new Error('Shows API not available');
             const data = await res.json();
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error("Empty shows from backend");
+            }
             set({ shows: data, showsFetchedForEventId: eventId });
         } catch (err) {
-            console.error(err);
+            // Fallback: usar funciones mock si el backend falla o devuelve vacío
+            const mockShows = MOCK_SHOWS[eventId] ?? [
+                { id: `show-${eventId}-mock1`, event_id: eventId, date: 'Oct 15, 2026', time: '20:00', status: 'available' },
+                { id: `show-${eventId}-mock2`, event_id: eventId, date: 'Oct 16, 2026', time: '19:00', status: 'available' },
+            ];
+            console.warn(`[DEV] Shows backend sin datos — inyectando ${mockShows.length} funciones mock para el evento ${eventId}.`);
+            set({ shows: mockShows, showsFetchedForEventId: eventId });
         }
     },
 
@@ -107,17 +220,46 @@ export const useStore = create<StoreState>((set, get) => ({
     fetchSeats: async (eventId: string) => {
         if (get().gridFetchedForEventId === eventId) return; // Prevent continuous over-fetching
         try {
-            const res = await fetch(`http://localhost:3005/events/${eventId}/seats`);
+            const res = await fetch(`http://localhost:3005/events/${eventId}/seats`, { headers: publicHeaders() });
             const data = await res.json();
+
+            // Handle case where DynamoDB returns empty (because seat tables are not seeded)
+            if (!Array.isArray(data) || data.length === 0) {
+                throw new Error("Empty seats from backend");
+            }
+
             const rowsObj: Record<string, any[]> = {};
             data.forEach((seat: any) => {
+                const row = seat.row || 'A';
+                if (!rowsObj[row]) rowsObj[row] = [];
+                rowsObj[row].push(seat);
+            });
+            const sortedRows = Object.keys(rowsObj).sort().map(r => rowsObj[r].sort((a: any, b: any) => a.number - b.number));
+            set({ seatsGrid: sortedRows, gridFetchedForEventId: eventId });
+        } catch (err) {
+            console.warn('[DEV] Backend/Seats vacío o no disponible — cargando asientos mock.');
+
+            // Fallback mock seats
+            const mockData: any[] = [];
+            const rows = ['A', 'B', 'C', 'D', 'E'];
+            rows.forEach(row => {
+                for (let i = 1; i <= 12; i++) {
+                    mockData.push({
+                        id: `${row}${i}`,
+                        row,
+                        number: i,
+                        status: Math.random() > 0.85 ? 'occupied' : 'available'
+                    });
+                }
+            });
+
+            const rowsObj: Record<string, any[]> = {};
+            mockData.forEach((seat: any) => {
                 if (!rowsObj[seat.row]) rowsObj[seat.row] = [];
                 rowsObj[seat.row].push(seat);
             });
             const sortedRows = Object.keys(rowsObj).sort().map(r => rowsObj[r].sort((a: any, b: any) => a.number - b.number));
             set({ seatsGrid: sortedRows, gridFetchedForEventId: eventId });
-        } catch (err) {
-            console.error(err);
         }
     },
 
@@ -126,12 +268,32 @@ export const useStore = create<StoreState>((set, get) => ({
     fetchMyTickets: async () => {
         if (get().ticketsFetched) return;
         try {
-            const res = await fetch('http://localhost:3006/tickets/me?userId=mock_user');
+            const res = await fetch('http://localhost:3006/tickets/me?userId=mock_user', { headers: authHeaders() });
             const data = await res.json();
             set({ myTickets: data, ticketsFetched: true });
         } catch (err) {
             console.error(err);
         }
+    },
+
+    // Auth
+    user: localStorage.getItem('auth_user') ? JSON.parse(localStorage.getItem('auth_user')!) : null,
+    isAuthenticated: !!localStorage.getItem('auth_user'),
+    login: (email: string) => {
+        const user = { id: 'mock-user-123', email };
+        localStorage.setItem('auth_user', JSON.stringify(user));
+        set({ user, isAuthenticated: true });
+    },
+    loginWithCognito: (userData: { id: string; name: string; email: string; idToken: string }) => {
+        const user = { id: userData.id, name: userData.name, email: userData.email, idToken: userData.idToken };
+        localStorage.setItem('auth_user', JSON.stringify(user));
+        set({ user, isAuthenticated: true });
+    },
+    logout: () => {
+        localStorage.removeItem('auth_user');
+        sessionStorage.removeItem('id_token');
+        sessionStorage.removeItem('access_token');
+        set({ user: null, isAuthenticated: false, myTickets: [], ticketsFetched: false });
     },
 
     checkoutProcessing: false,
@@ -171,7 +333,7 @@ export const useStore = create<StoreState>((set, get) => ({
             const startRes = await fetch(`${STEP_FUNCTIONS_ENDPOINT}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-amz-json-1.0',
+                    ...authHeaders(),                           // x-api-key + Authorization JWT
                     'X-Amz-Target': 'AWSStepFunctions.StartExecution'
                 },
                 body: JSON.stringify({
