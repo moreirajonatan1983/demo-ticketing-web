@@ -1,0 +1,96 @@
+name: "CI/CD — Frontend Web React [STAGE]"
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "¿Deployar a AWS S3+CloudFront STAGE? (true = deploy, false = solo build/test)"
+        required: true
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ENVIRONMENT: stage
+  S3_BUCKET: ${{ secrets.S3_BUCKET_STAGE }}
+  CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_ID_STAGE }}
+
+jobs:
+  build-and-test:
+    name: "Build & Test (React/Vite)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Tests
+        run: npm test -- --watchAll=false --passWithNoTests
+
+      - name: Build (STAGE)
+        run: npm run build
+        env:
+          VITE_ENV: stage
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL_STAGE }}
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-stage
+          path: dist/
+          retention-days: 1
+
+  deploy:
+    name: "Deploy → S3 + CloudFront STAGE"
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.deploy == 'true' }}
+    environment: stage
+
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-stage
+          path: dist/
+
+      - name: Configure AWS Credentials (OIDC → demo-ticketing-stage)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_STAGE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sync to S3 STAGE
+        run: |
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }} \
+            --delete \
+            --cache-control "max-age=31536000,public" \
+            --exclude "index.html"
+          # index.html sin cache para forzar siempre la última versión
+          aws s3 cp dist/index.html s3://${{ env.S3_BUCKET }}/index.html \
+            --cache-control "no-cache,no-store,must-revalidate"
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+      - name: Summary
+        run: echo "✅ Frontend deploado a S3 STAGE + CloudFront invalidado"
