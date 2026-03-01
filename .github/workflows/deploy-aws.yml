@@ -1,0 +1,47 @@
+name: Deploy Frontend SPA to AWS S3 + CloudFront
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write # Seguro (No usa contraseñas IAM)
+  contents: read
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Web Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN_WEB }}
+          aws-region: us-east-1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_API_GATEWAY_URL: ${{ secrets.PROD_API_GATEWAY_URL }}
+          VITE_API_KEY: ${{ secrets.PROD_API_KEY }}
+
+      # NOTA AWS FREE TIER:
+      # Amazon S3 Standard tiene una capa gratuita (5GB almacenamiento / 20k Get)
+      # CloudFront también (1 TB Data Transfer out, 10 Milllones solicitudes HTTP gratis).
+      - name: Deploy to CloudFront/S3
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.AWS_S3_FRONTEND_BUCKET_NAME }} \
+            --delete \
+            --cache-control max-age=31536000,public
+
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.AWS_CLOUDFRONT_ID }} \
+            --paths "/*"
