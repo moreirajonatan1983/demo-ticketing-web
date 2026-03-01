@@ -7,15 +7,20 @@ const Checkout = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const [simulateRejected, setSimulateRejected] = useState(false);
+
     const {
         checkoutProcessing: isProcessing,
         checkoutConfirmed: isConfirmed,
         checkoutRejected: isRejected,
+        checkoutError,
         processCheckout,
         selectedEvent,
         fetchEventDetails,
-        resetCheckout
+        resetCheckout,
+        setPurchaseExpiresAt
     } = useStore();
+
+    const [cardNumber, setCardNumber] = useState('');
 
     useEffect(() => {
         if (id) fetchEventDetails(id);
@@ -26,8 +31,17 @@ const Checkout = () => {
 
     const handlePay = async (e: React.FormEvent) => {
         e.preventDefault();
+        setPurchaseExpiresAt(null); // Stop global timer
         const method = simulateRejected ? 'REJECTED_CARD' : 'CREDIT_CARD';
         await processCheckout(id || "1", ["G4", "G5"], method);
+    };
+
+    const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let val = e.target.value.replace(/\D/g, ''); // Remove non-digits
+        if (val.length > 16) val = val.substring(0, 16);
+        // Add space every 4 digits
+        const formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+        setCardNumber(formatted);
     };
 
     // W-02: Pago rechazado - SAGA ejecutó la compensación (seats liberados)
@@ -39,10 +53,10 @@ const Checkout = () => {
                 </div>
                 <h2 className="section-title" style={{ fontSize: '2rem', marginBottom: '1rem', color: '#ef4444' }}>Pago Rechazado</h2>
                 <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: '1.6' }}>
-                    Tu pago no pudo procesarse. Los asientos fueron <strong>liberados automáticamente</strong> por el sistema SAGA.
+                    Tu pago no pudo procesarse. Los asientos fueron <strong>liberados automáticamente</strong> por el sistema.
                 </p>
                 <div style={{ padding: '1rem', background: 'rgba(239,68,68,0.1)', borderRadius: 'var(--radius-sm)', marginBottom: '2rem', fontSize: '0.9rem', color: '#ef4444' }}>
-                    Verificá los datos de tu tarjeta e intentá nuevamente.
+                    {checkoutError || 'Verificá los datos de tu tarjeta e intentá nuevamente.'}
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                     <button className="btn btn-secondary" onClick={() => { resetCheckout(); navigate(-1); }}>Volver al Evento</button>
@@ -58,12 +72,12 @@ const Checkout = () => {
                 <div style={{ width: '80px', height: '80px', background: 'rgba(16, 185, 129, 0.2)', color: 'var(--success)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
                     <Mail size={40} />
                 </div>
-                <h2 className="section-title title-glow" style={{ fontSize: '2rem', marginBottom: '1rem' }}>¡Compra Exitosa!</h2>
+                <h2 className="section-title title-glow" style={{ fontSize: '2rem', marginBottom: '1rem' }}>Orden Procesándose</h2>
                 <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '2.5rem', lineHeight: '1.6' }}>
-                    Tu compra por <strong>{totalItems} entradas</strong> fue procesada exitosamente por el SAGA de AWS Step Functions.
+                    Estamos procesando tu pago por <strong>{totalItems} entradas</strong>.
                 </p>
                 <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)', marginBottom: '3rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                    Recibirás un correo electrónico de confirmación con tus entradas en formato digital.
+                    La compra se confirmará por correo electrónico una vez validado el pago.
                 </div>
                 <button className="btn btn-primary" onClick={() => navigate('/mytickets')}>
                     Ir a Mis Entradas
@@ -95,7 +109,16 @@ const Checkout = () => {
                             <label className="form-label">Número de Tarjeta (Mock)</label>
                             <div style={{ position: 'relative' }}>
                                 <CreditCard size={18} color="var(--text-secondary)" style={{ position: 'absolute', left: '16px', top: '16px' }} />
-                                <input type="text" required className="form-input" placeholder="•••• •••• •••• ••••" style={{ paddingLeft: '44px' }} />
+                                <input
+                                    type="text"
+                                    required
+                                    className="form-input"
+                                    placeholder="•••• •••• •••• ••••"
+                                    style={{ paddingLeft: '44px' }}
+                                    value={cardNumber}
+                                    onChange={handleCardChange}
+                                    maxLength={19}
+                                />
                             </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>

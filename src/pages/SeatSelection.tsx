@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Users, HelpCircle, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import EventHeader from '../components/EventHeader';
 
@@ -8,7 +8,10 @@ const SeatSelection = () => {
     const navigate = useNavigate();
     const { id, sectorId } = useParams();
     const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
-    const { seatsGrid: grid, fetchSeats } = useStore();
+    const [simulatedOccupied, setSimulatedOccupied] = useState<string[]>([]);
+    const [isSimulating, setIsSimulating] = useState(false);
+    const [showHelpModal, setShowHelpModal] = useState(false);
+    const { seatsGrid: grid, fetchSeats, purchaseExpiresAt, setPurchaseExpiresAt } = useStore();
     const MAX_TICKETS = 4;
 
     useEffect(() => {
@@ -21,11 +24,19 @@ const SeatSelection = () => {
     };
 
     const handleSeatClick = (seatId: string, status: string) => {
-        if (status === 'occupied' || status === 'processing') return;
+        if (status === 'occupied' || status === 'processing' || simulatedOccupied.includes(seatId)) return;
 
         if (selectedSeats.includes(seatId)) {
-            setSelectedSeats(selectedSeats.filter(id => id !== seatId));
+            const nextSeats = selectedSeats.filter(id => id !== seatId);
+            setSelectedSeats(nextSeats);
+            if (nextSeats.length === 0) {
+                setPurchaseExpiresAt(null);
+            }
         } else {
+            if (selectedSeats.length === 0 && !purchaseExpiresAt) {
+                // Initialize 60s timer
+                setPurchaseExpiresAt(Date.now() + 60000);
+            }
             if (selectedSeats.length >= MAX_TICKETS) {
                 alert(`Solo se permiten un máximo de ${MAX_TICKETS} tickets por transacción.`);
                 return;
@@ -39,6 +50,30 @@ const SeatSelection = () => {
         navigate(`/event/${id || '1'}/delivery`);
     };
 
+    const handleSimulateConcurrency = () => {
+        setIsSimulating(true);
+        const allSeatIds = grid.flatMap(row => row.map(s => s.id));
+
+        let attempts = 0;
+        const intervalId = setInterval(() => {
+            attempts++;
+            const randomSeatsToOccupy: string[] = [];
+            for (let i = 0; i < 3; i++) {
+                const randomIdx = Math.floor(Math.random() * allSeatIds.length);
+                const randomId = allSeatIds[randomIdx];
+                if (!selectedSeats.includes(randomId)) { // No ocupar los del usuario actual
+                    randomSeatsToOccupy.push(randomId);
+                }
+            }
+            setSimulatedOccupied(prev => [...prev, ...randomSeatsToOccupy]);
+
+            if (attempts > 6) {
+                clearInterval(intervalId);
+                setIsSimulating(false);
+            }
+        }, 1500); // Cada 1.5s ocupa lugares
+    };
+
     return (
         <div className="animate-fade-in" style={{ padding: '2rem 0' }}>
             <EventHeader title="Ricardo Montaner" date="Domingo, 08 Marzo 2026 • 21:00 hs" timeRemaining="09:42" />
@@ -48,8 +83,27 @@ const SeatSelection = () => {
                     <button className="btn btn-secondary" style={{ marginBottom: '1rem', padding: '6px 16px', fontSize: '0.9rem' }} onClick={() => navigate(-1)}>
                         &larr; Volver a Mapa
                     </button>
-                    <h2 className="section-title title-glow" style={{ fontSize: '1.8rem', margin: 0 }}>Elegí tus Asientos</h2>
-                    <p style={{ color: 'var(--text-secondary)' }}>Sector: <strong style={{ color: 'white' }}>{parseSectorName(sectorId)}</strong></p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <h2 className="section-title title-glow" style={{ fontSize: '1.8rem', margin: 0 }}>Elegí tus Asientos</h2>
+                        <button
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'center', borderColor: 'var(--warning)', color: 'var(--warning)' }}
+                            onClick={handleSimulateConcurrency}
+                            disabled={isSimulating}
+                        >
+                            <Users size={14} />
+                            {isSimulating ? 'Simulando...' : 'Simular Concurrencia'}
+                        </button>
+                        <button
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 12px', fontSize: '0.8rem', display: 'flex', gap: '6px', alignItems: 'center' }}
+                            onClick={() => setShowHelpModal(true)}
+                        >
+                            <HelpCircle size={14} />
+                            Info Arq.
+                        </button>
+                    </div>
+                    <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Sector: <strong style={{ color: 'white' }}>{parseSectorName(sectorId)}</strong></p>
                 </div>
 
                 <div className="glass-panel" style={{ padding: '0.75rem 1.5rem', display: 'flex', gap: '1.5rem' }}>
@@ -92,7 +146,7 @@ const SeatSelection = () => {
                                     let cursor = 'pointer';
                                     let opacity = 1;
 
-                                    if (seat.status === 'occupied') {
+                                    if (seat.status === 'occupied' || simulatedOccupied.includes(seat.id)) {
                                         bgColor = 'rgba(255,255,255,0.05)';
                                         borderColor = 'transparent';
                                         cursor = 'not-allowed';
@@ -170,7 +224,49 @@ const SeatSelection = () => {
                 </div>
             </div>
 
-            <div style={{ paddingBottom: '80px' }}></div>
+            {/* Modal de Ayuda */}
+            {showHelpModal && (
+                <div className="modal-overlay" style={{ display: 'flex' }} onClick={() => setShowHelpModal(false)}>
+                    <div className="modal-content animate-fade-in" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+                        <button className="modal-close" onClick={() => setShowHelpModal(false)}>
+                            <X size={24} />
+                        </button>
+                        <h2 className="title-glow" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <HelpCircle size={28} color="var(--primary)" />
+                            Arquitectura y Casos de Uso
+                        </h2>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
+                            <div className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
+                                <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                                    🚀 Control de Concurrencia
+                                </h3>
+                                <p>Este mapa simula un comportamiento en tiempo real usando el patrón <strong>CQRS y Bloqueos Optimistas</strong>. Si haces clic en <em>"Simular Concurrencia"</em>, el sistema emulará a cientos de usuarios reales bloqueando butacas al azar. La base de datos DynamoDB usaría bloqueos optimistas (ConditionExpressions) para garantizar que dos usuarios no puedan comprar el mismo asiento en paralelo.</p>
+                            </div>
+
+                            <div className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
+                                <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                                    ⚙️ SAGA Coreografía (Step Functions)
+                                </h3>
+                                <p>Al presionar Continuar iniciarás el StateMachine. Aquí no hay una única transacción ACID, todo el proceso de descontar asientos, validar pagos y generar el ticket se orquesta mediante un workflow en <strong>AWS Step Functions</strong> usando funciones Lambda totalmente escalables. Si el "Pago" falla, las funciones Lambda regresarán y liberarán los asientos automáticamente.</p>
+                            </div>
+
+                            <div className="glass-panel" style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)' }}>
+                                <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
+                                    🛡️ Waiting Room Pattern
+                                </h3>
+                                <p>Previo a esta pantalla y al pagar, tu ingreso fue filtrado por un <strong>Sorting Queue en Redis</strong> en un cluster de Kubernetes. Esto protege a la base de datos de picos de cientos de miles de usuarios intentando hacer requests a la vez (por ejemplo, entradas para grandes recitales).</p>
+                            </div>
+                        </div>
+
+                        <div className="modal-actions" style={{ marginTop: '2rem' }}>
+                            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setShowHelpModal(false)}>
+                                Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -33,9 +33,9 @@ const Login = () => {
         setTimeout(() => navigate(-1), 200);
     };
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        login(email);
+        await login(email);
         navigate(from, { replace: true });
     };
 
